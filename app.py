@@ -4,6 +4,9 @@ import pandas as pd
 from data_pull import Logowanie
 from pandas_profiling import ProfileReport
 from streamlit_pandas_profiling import st_profile_report
+from streamlit_apex_charts import line_chart, bar_chart, create_chart_data
+from st_card import st_card
+
 
 today = datetime.today()
 # ---------------------------------#
@@ -51,6 +54,37 @@ if option == 'Read the data':
 # 1. Connect trough fixed credentials 2. Using same query create EDApip
 if option == 'Make the dashboard':
     st.sidebar.header("2. Choose your variables")
+    if app_id != "" and app_secret != "" and access_token != "" and ad_account != "":
+        try:
+            app_id, app_secret, access_token, ad_account, level, date_preset, breakdowns = get_connection()
+            credential = Logowanie(app_id, app_secret, access_token, ad_account, level, date_preset, breakdowns)
+            dane = credential.login()
+            df = pd.DataFrame(data=dane)
+            df1 = df[['clicks']]
+            filtered = df[['clicks', 'reach', 'spend']]
+            filtered[["clicks", "reach", "spend"]] = filtered[["clicks", "reach", "spend"]].apply(pd.to_numeric)
+            line_chart("Line Chart", df1)
+            sum1 = int(filtered["clicks"].sum())
+            sum2 = int(filtered["spend"].sum())
+            sum3 = int(filtered["reach"].sum())
+            kpi1, kpi2, kpi3 = st.columns(3)
+
+            with kpi1:
+                st.markdown("**Clicks**")
+                number1 = st_card('Clicks', value=sum1)
+
+            with kpi2:
+                st.markdown("**Spend**")
+                number2 = st_card('Spend', value=sum2, unit='PLN', show_progress=True)
+
+            with kpi3:
+                st.markdown("**Reach**")
+                number3 = st_card('Reach', value=sum3, delta=1, delta_description=f"Total reach for {date_preset}")
+            st.header('**Input DataFrame**')
+            st.write(df)
+            st.write('---')
+        except Exception as ex:
+            st.error(ex)
 
 if option == 'Explore the data':
     st.sidebar.header("3. Make your exploratory analysis")
